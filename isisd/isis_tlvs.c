@@ -817,6 +817,144 @@ out:
 
 	return 1;
 }
+/* Functions for TLV 100 - Hundred */
+
+/*
+ * Used when we copy one `struct isis_tlvs` to another.
+ *
+ * `i`: The item which should be copied.
+ *
+ * Returns a copy of the item
+ */
+static struct isis_item *copy_item_hundred(struct isis_item *i)
+{
+	struct isis_hundred *h = (struct isis_hundred *)i;
+	struct isis_hundred *rv = XCALLOC(MTYPE_ISIS_TLV, sizeof(*rv));
+
+	rv->payload = h->payload;
+	rv->subtlvs = copy_subtlvs(h->subtlvs);
+
+	return (struct isis_item*)rv;
+}
+
+/*
+ * Used to pretty-print items from TLVs.
+ *
+ * `mtid`:   Toplogy ID. Should be shown in the output in case of a
+ *           multi-topology TLV.
+ * `i`:      The item which should be formatted.
+ * `sbuf`:   The buffer where the format output should be written to.
+ * `indent`: The amound of whitespace to add before each line of log.
+ */
+static void format_item_hundred(uint16_t mtid, struct isis_item *i,
+				   struct sbuf *buf, int indent)
+{
+	struct isis_hundred *h = (struct isis_hundred *)i;
+	char ip_str[INET_ADDRSTRLEN];
+
+	inet_ntop(AF_INET, &h->payload, ip_str, sizeof(ip_str));
+
+	sbuf_push(buf, indent, "TLV Hundred:\n");
+	sbuf_push(buf, indent, "  Payload:%s\n", ip_str);
+
+	if (h->subtlvs) {
+		sbuf_push(buf, indent, "  Subtlvs:\n");
+		format_subtlvs(h->subtlvs, buf, indent + 4);
+	}
+}
+
+static void free_item_hundred(struct isis_item *i)
+{
+	struct isis_hundred *h = (struct isis_hundred *)i;
+
+	isis_free_subtlvs(h->subtlvs);
+	XFREE(MTYPE_ISIS_TLV, h);
+}
+
+/*
+ * Puts a single item on the wire. A TLV may contain multiple items.
+ *
+ * `i`:   The item we should pack
+ * `s`:   The stream we should pack to
+ *
+ * Returns 0 and pushes the item into the stream if successful.
+ * Returns 1 on error.
+ */
+static int pack_item_hundred(struct isis_item *i, struct stream *s)
+{
+	struct isis_hundred *h = (struct isis_hundred *)i;
+
+	if (STREAM_WRITEABLE(s) < 5)
+		return 1;
+
+	stream_put(s, &h->payload, 4);
+
+	if (h->subtlvs) {
+		pack_subtlvs(h->subtlvs, s);
+	} else {
+		stream_putc(s, 0);
+	}
+
+	return 0;
+}
+
+/*
+ * Decodes an item from the wire. A TLV may contain one or multiple items.
+ *
+ * `mtid`:   Topology ID.
+ *           If the item is an MTID item, `mtid` should be used to put it into
+ *           the right list, otherwise (like here) it can be ignored.
+ * `len`:    Number of octets available inside of the TLV we are decoding
+ * `s`:      Stream we are reading the item from
+ * `log`:    Log where we are writing the unpack log to
+ * `dest`:   Pointer to the `struct isis_tlvs` which we should unpack to
+ * `indent`: The number of spaces by which the log should be indented
+ *
+ * Returns 0 and appends unpacked item to dest->hundreds on successful read,
+ * otherwise 1.
+ */
+static int unpack_item_hundred(uint16_t mtid, uint8_t len, struct stream *s,
+				  struct sbuf *log, void *dest, int indent)
+{
+	struct isis_tlvs *tlvs = dest;
+	struct isis_hundred *rv = NULL;
+
+	sbuf_push(log, indent, "Unpacking TLV hundred...\n");
+	if (len < 5) {
+		sbuf_push(log, indent,
+			  "Not enough data left. (expected 5 or more bytes, got %"
+			  PRIu8 ")\n", len);
+		goto out;
+	}
+
+	rv = XCALLOC(MTYPE_ISIS_TLV, sizeof(*rv));
+	stream_get(&rv->payload, s, 4);
+
+	uint8_t subtlv_len = stream_getc(s);
+
+	if (len < 5 + subtlv_len) {
+		sbuf_push(log, indent,
+			  "Expected %" PRIu8
+			  " bytes of subtlvs, but only %u bytes available.\n",
+			  subtlv_len, len - 5);
+		goto out;
+	}
+
+	rv->subtlvs = isis_alloc_subtlvs(ISIS_CONTEXT_SUBTLV_HUNDRED);
+	if (unpack_tlvs(ISIS_CONTEXT_SUBTLV_HUNDRED, subtlv_len, s,
+	                log, rv->subtlvs, indent + 4)) {
+		goto out;
+	}
+
+	format_item_hundred(mtid, (struct isis_item *)rv, log, indent + 2);
+	append_item(&tlvs->hundreds, (struct isis_item *)rv);
+	return 0;
+
+out:
+	if (rv)
+		free_item_hundred((struct isis_item*)rv);
+	return 1;
+}
 
 /* Functions related to TLV 128 (Old-Style) IP Reach */
 static struct isis_item *copy_item_oldstyle_ip_reach(struct isis_item *i)

@@ -196,6 +196,14 @@ struct isis_purge_originator {
 	uint8_t sender[6];
 };
 
+struct isis_hundred;
+struct isis_hundred {
+	struct isis_hundred *next;
+
+	struct in_addr payload;
+	struct isis_subtlvs *subtlvs;
+};
+
 enum isis_auth_result {
 	ISIS_AUTH_OK = 0,
 	ISIS_AUTH_TYPE_FAILURE,
@@ -258,6 +266,7 @@ enum isis_tlv_context {
 	ISIS_CONTEXT_SUBTLV_NE_REACH,
 	ISIS_CONTEXT_SUBTLV_IP_REACH,
 	ISIS_CONTEXT_SUBTLV_IPV6_REACH,
+	ISIS_CONTEXT_SUBTLV_HUNDRED,
 	ISIS_CONTEXT_MAX
 };
 
@@ -279,6 +288,8 @@ enum isis_tlv_type {
 	ISIS_TLV_AUTH = 10,
 	ISIS_TLV_PURGE_ORIGINATOR = 13,
 	ISIS_TLV_EXTENDED_REACH = 22,
+
+	ISIS_TLV_HUNDRED = 100,
 
 	ISIS_TLV_OLDSTYLE_IP_REACH = 128,
 	ISIS_TLV_PROTOCOLS_SUPPORTED = 129,

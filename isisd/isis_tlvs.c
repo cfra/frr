@@ -96,7 +96,9 @@ static struct pack_order_entry pack_order[] = {
 	PACK_ENTRY(EXTENDED_IP_REACH, ISIS_ITEMS, extended_ip_reach),
 	PACK_ENTRY(MT_IP_REACH, ISIS_MT_ITEMS, mt_ip_reach),
 	PACK_ENTRY(IPV6_REACH, ISIS_ITEMS, ipv6_reach),
-	PACK_ENTRY(MT_IPV6_REACH, ISIS_MT_ITEMS, mt_ipv6_reach)};
+	PACK_ENTRY(MT_IPV6_REACH, ISIS_MT_ITEMS, mt_ipv6_reach),
+	PACK_ENTRY(HUNDRED, ISIS_ITEMS, hundreds),
+};
 
 /* This is a forward definition. The table is actually initialized
  * in at the bottom. */
@@ -2507,6 +2509,7 @@ struct isis_tlvs *isis_alloc_tlvs(void)
 	RB_INIT(isis_mt_item_list, &result->mt_ip_reach);
 	init_item_list(&result->ipv6_reach);
 	RB_INIT(isis_mt_item_list, &result->mt_ipv6_reach);
+	init_item_list(&result->hundreds);
 
 	return result;
 }
@@ -2579,6 +2582,9 @@ struct isis_tlvs *isis_copy_tlvs(struct isis_tlvs *tlvs)
 
 	rv->spine_leaf = copy_tlv_spine_leaf(tlvs->spine_leaf);
 
+	copy_items(ISIS_CONTEXT_LSP, ISIS_TLV_HUNDRED,
+	            &tlvs->hundreds, &rv->hundreds);
+
 	return rv;
 }
 
@@ -2646,6 +2652,9 @@ static void format_tlvs(struct isis_tlvs *tlvs, struct sbuf *buf, int indent)
 	format_tlv_threeway_adj(tlvs->threeway_adj, buf, indent);
 
 	format_tlv_spine_leaf(tlvs->spine_leaf, buf, indent);
+
+	format_items(ISIS_CONTEXT_LSP, ISIS_TLV_HUNDRED, &tlvs->hundreds,
+		     buf, indent);
 }
 
 const char *isis_format_tlvs(struct isis_tlvs *tlvs)
@@ -2699,6 +2708,7 @@ void isis_free_tlvs(struct isis_tlvs *tlvs)
 		      &tlvs->mt_ipv6_reach);
 	free_tlv_threeway_adj(tlvs->threeway_adj);
 	free_tlv_spine_leaf(tlvs->spine_leaf);
+	free_items(ISIS_CONTEXT_LSP, ISIS_TLV_HUNDRED, &tlvs->hundreds);
 
 	XFREE(MTYPE_ISIS_TLV, tlvs);
 }
@@ -3102,6 +3112,7 @@ ITEM_TLV_OPS(mt_router_info, "TLV 229 MT Router Information");
 TLV_OPS(threeway_adj, "TLV 240 P2P Three-Way Adjacency");
 ITEM_TLV_OPS(ipv6_address, "TLV 232 IPv6 Interface Address");
 ITEM_TLV_OPS(ipv6_reach, "TLV 236 IPv6 Reachability");
+ITEM_TLV_OPS(hundred, "TLV 100 Hundred");
 
 ITEM_SUBTLV_OPS(prefix_sid, "Sub-TLV 3 SR Prefix-SID");
 SUBTLV_OPS(ipv6_source_prefix, "Sub-TLV 22 IPv6 Source Prefix");
@@ -3116,6 +3127,7 @@ static const struct tlv_ops *tlv_table[ISIS_CONTEXT_MAX][ISIS_TLV_MAX] = {
 		[ISIS_TLV_PURGE_ORIGINATOR] = &tlv_purge_originator_ops,
 		[ISIS_TLV_EXTENDED_REACH] = &tlv_extended_reach_ops,
 		[ISIS_TLV_MT_REACH] = &tlv_extended_reach_ops,
+		[ISIS_TLV_HUNDRED] = &tlv_hundred_ops,
 		[ISIS_TLV_OLDSTYLE_IP_REACH] = &tlv_oldstyle_ip_reach_ops,
 		[ISIS_TLV_PROTOCOLS_SUPPORTED] = &tlv_protocols_supported_ops,
 		[ISIS_TLV_OLDSTYLE_IP_REACH_EXT] = &tlv_oldstyle_ip_reach_ops,

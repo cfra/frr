@@ -242,6 +242,7 @@ struct isis_tlvs {
 	struct isis_mt_item_list mt_ipv6_reach;
 	struct isis_threeway_adj *threeway_adj;
 	struct isis_spine_leaf *spine_leaf;
+	struct isis_item_list hundreds;
 };
 
 #define ISIS_PREFIX_SID_READVERTISED  0x80

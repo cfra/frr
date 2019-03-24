@@ -4,11 +4,11 @@ commands:
   attach-with-frr:
     steps:
       - attach_workspace:
-          at: /home/circleci
+          at: /root
       - run:
           name: Install FRR
           command:
-            sudo make install
+            make install
 
 executors:
   base:
@@ -45,7 +45,7 @@ jobs:
             make -j${cpu_count}
       - persist_to_workspace:
           name: Persist frr to workspace
-          root: /home/circleci
+          root: /root
           paths:
             - project
   check:

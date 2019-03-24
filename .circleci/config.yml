@@ -3,7 +3,7 @@ version: 2.0
 jobs:
   build-deb:
     docker:
-      image: debian:testing
+      - image: debian:testing
     steps:
       - run:
           name: Something

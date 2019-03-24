@@ -1,9 +1,22 @@
 version: 2.0
 
-jobs:
-  build-deb:
+commands:
+  attach-with-frr:
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - run:
+          name: Install FRR
+          command:
+            sudo make install
+
+executors:
+  base:
     docker:
       - image: frrouting/frr:topotests-latest
+jobs:
+  build:
+    executor: base
     steps:
       - checkout
       - run:
@@ -28,10 +41,27 @@ jobs:
             if [ $? -ne 0 ]; then
                     cpu_count=2
             fi
+            echo "Building with ${cpu_count} CPUs"
             make -j${cpu_count}
+      - persist_to_workspace:
+          name: Persist frr to workspace
+          root: /home/circleci
+          paths:
+            - project
+  check:
+    executor: base
+    steps:
+      - attach-with-frr
+      - run:
+          name: Run unittests
+          command: |
+            make check
 
 workflows:
   version: 2
   build:
     jobs:
-      - build-deb
+      - build
+      - check:
+          requires:
+            - build

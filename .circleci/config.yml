@@ -5,10 +5,10 @@ jobs:
     docker:
       image: debian:testing
     steps:
-      run:
-        name: Something
-        command:
-          true
+      - run:
+          name: Something
+          command:
+            true
 
 workflows:
   version: 2

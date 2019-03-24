@@ -3,7 +3,7 @@ version: 2.0
 jobs:
   build-deb:
     docker:
-      - image: frrouting/frr:topotests
+      - image: frrouting/frr:topotests-latest
     steps:
       - checkout
       - run:

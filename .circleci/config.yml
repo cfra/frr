@@ -3,16 +3,32 @@ version: 2.0
 jobs:
   build-deb:
     docker:
-      - image: debian:testing
+      - image: frrouting/frr:topotests
     steps:
+      - checkout
       - run:
-          name: Install dependencies
+          name: Compile FRR
           command: |
-            apt-get update
-            apt-get install -y git autoconf automake libtool make \
-                libreadline-dev texinfo libjson-c-dev pkg-config bison flex python-pip \
-                libc-ares-dev python3-dev python-pytest python3-sphinx build-essential \
-                libsystemd-dev
+            ./bootstrap.sh
+            ./configure \
+                --enable-static-bin \
+                --enable-static \
+                --enable-shared \
+                --with-moduledir=/usr/lib/frr/modules \
+                --prefix=/usr \
+                --localstatedir=/var/run/frr \
+                --sbindir=/usr/lib/frr \
+                --sysconfdir=/etc/frr \
+                --enable-multipath=0 \
+                --enable-fpm \
+                --enable-sharpd \
+                $EXTRA_CONFIGURE \
+                --with-pkg-extra-version=-topotests
+            cpu_count=$(cat /proc/cpuinfo | grep -w processor | wc -l)
+            if [ $? -ne 0 ]; then
+                    cpu_count=2
+            fi
+            make -j${cpu_count}
 
 workflows:
   version: 2

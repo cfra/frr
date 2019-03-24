@@ -56,6 +56,18 @@ jobs:
           name: Run unittests
           command: |
             make check
+  topotest:
+    executor: base
+    steps:
+      - attach-with-frr
+      - run:
+          name: Setup openvswitch
+          command: |
+            ./tests/topotests/docker/inner/openvswitch.sh
+      - run:
+          name: Run topotest
+          command: |
+            pytest tests/topotests/all-protocol-startup/test_all_protocol_startup.py
 
 workflows:
   version: 2
@@ -63,5 +75,8 @@ workflows:
     jobs:
       - build
       - check:
+          requires:
+            - build
+      - topotest:
           requires:
             - build

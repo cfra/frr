@@ -67,7 +67,8 @@ jobs:
       - run:
           name: Run topotest
           command: |
-            pytest tests/topotests/all-protocol-startup/test_all_protocol_startup.py
+            pytest -vv -s tests/topotests/all-protocol-startup/test_all_protocol_startup.py
+          no_output_timeout: 30m
 
 workflows:
   version: 2

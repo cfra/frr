@@ -32,25 +32,6 @@ CDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Script begin
 #
 
-if [ "${TOPOTEST_CLEAN}" != "0" ]; then
-	log_info "Cleaning FRR builddir..."
-	rm -rf $FRR_SYNC_DIR $FRR_BUILD_DIR &> /dev/null
-fi
-
-log_info "Syncing FRR source with host..."
-mkdir -p $FRR_SYNC_DIR
-rsync -a --info=progress2 \
-	--exclude '*.o' \
-	--exclude '*.lo'\
-	--chown root:root \
-	$FRR_HOST_DIR/. $FRR_SYNC_DIR/
-(cd $FRR_SYNC_DIR && git clean -xdf > /dev/null)
-mkdir -p $FRR_BUILD_DIR
-rsync -a --info=progress2 --chown root:root $FRR_SYNC_DIR/. $FRR_BUILD_DIR/
-
-cd "$FRR_BUILD_DIR" || \
-	log_fatal "failed to find frr directory"
-
 if [ "${TOPOTEST_VERBOSE}" != "0" ]; then
 	exec 3>&1
 else

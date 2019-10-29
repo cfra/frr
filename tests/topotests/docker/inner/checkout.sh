@@ -22,30 +22,33 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+set -e
+
 # Load shared functions
 CDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . $CDIR/funcs.sh
 
-set -e
-
 #
 # Script begin
 #
-"${CDIR}/checkout.sh"
-"${CDIR}/compile_frr.sh"
-"${CDIR}/openvswitch.sh"
 
-cd "${FRR_BUILD_DIR}/tests/topotests"
-
-log_info "Setting permissions on /tmp so we can generate logs"
-chmod 1777 /tmp
-
-if [ $# -eq 0 ] || ([[ "$1" != /* ]] && [[ "$1" != ./* ]]); then
-	export TOPOTESTS_CHECK_MEMLEAK=/tmp/memleak_
-	export TOPOTESTS_CHECK_STDERR=Yes
-	set -- pytest \
-		--junitxml /tmp/topotests.xml \
-		"$@"
+if [ "${TOPOTEST_CLEAN}" != "0" ]; then
+	log_info "Cleaning FRR builddir..."
+	rm -rf $FRR_SYNC_DIR $FRR_BUILD_DIR &> /dev/null
 fi
 
-exec "$@"
+log_info "Syncing FRR source with host..."
+mkdir -p $FRR_SYNC_DIR
+rsync -a --info=progress2 \
+	--exclude '*.o' \
+	--exclude '*.lo'\
+	--chown root:root \
+	$FRR_HOST_DIR/. $FRR_SYNC_DIR/
+(cd $FRR_SYNC_DIR && git clean -xdf > /dev/null)
+mkdir -p $FRR_BUILD_DIR
+rsync -a --info=progress2 --chown root:root $FRR_SYNC_DIR/. $FRR_BUILD_DIR/
+
+cd "$FRR_BUILD_DIR" || \
+	log_fatal "failed to find frr directory"
+
+

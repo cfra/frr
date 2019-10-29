@@ -1,0 +1,8 @@
+kind: pipeline
+name: default
+
+steps:
+- name: build
+  image: frrouting/topotests
+  commands:
+    - ./tests/topotests/docker/inner/compile_frr.sh
